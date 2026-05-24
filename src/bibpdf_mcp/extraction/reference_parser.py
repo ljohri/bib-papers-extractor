@@ -42,9 +42,11 @@ _BLANK_SPLIT_RE = re.compile(r"\n\s*\n+")
 # Soft splitter — when entries are jammed together but every entry starts with a
 # bracketed or numbered prefix. Splits whether the prefix appears at the start of a
 # line or mid-string after a period.
+# Reference numbers are 1–3 digits only so publication years like ``2025.`` are
+# not mistaken for numbered-list prefixes.
 _INLINE_NUMBERED_SPLIT_RE = re.compile(
     r"""(?:(?<=\n)|(?<=^)|(?<=\.\s))
-        (?=\s*(?:\[\d+\]|\(\d+\)|\d+[\.\)])\s+[A-Z])""",
+        (?=\s*(?:\[\d{1,3}\]|\(\d{1,3}\)|\d{1,3}[\.\)])\s+[A-Z])""",
     re.VERBOSE,
 )
 
@@ -139,7 +141,7 @@ def parse_references_from_text(bibliography_text: str) -> list[Reference]:
 
 def _normalize_whitespace(text: str) -> str:
     text = unicodedata.normalize("NFKC", text)
-    text = _DEHYPHEN_RE.sub("", text)  # join hyphenated line-breaks
+    text = _DEHYPHEN_RE.sub("-", text)  # rejoin hyphenated line-breaks, keep the hyphen
     text = text.replace("\r", "")
     # Collapse multiple spaces/tabs but preserve newlines (newlines are meaningful for splitting).
     text = "\n".join(_WHITESPACE_RE.sub(" ", line.strip()) for line in text.split("\n"))
