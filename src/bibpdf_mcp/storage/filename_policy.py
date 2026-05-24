@@ -52,7 +52,9 @@ def _short_title(work: ResolvedWork, *, max_words: int) -> str:
     if not tokens:
         return "UnknownTitle"
     head = tokens[: max(1, max_words)]
-    cleaned = "".join(t.capitalize() for t in head)
+    # Capitalize the leading character but preserve any internal casing the
+    # token already has (e.g. 'BERT' stays 'BERT', 'UnknownTitle' stays as-is).
+    cleaned = "".join((t[:1].upper() + t[1:]) for t in head)
     return cleaned[:48] or "UnknownTitle"
 
 

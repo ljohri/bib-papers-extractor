@@ -40,9 +40,10 @@ _NUMBERED_PREFIX_RE = re.compile(r"^\s*(?:\[(\d+)\]|\((\d+)\)|(\d+)[\.\)])\s+")
 _BLANK_SPLIT_RE = re.compile(r"\n\s*\n+")
 
 # Soft splitter — when entries are jammed together but every entry starts with a
-# bracketed or numbered prefix.
+# bracketed or numbered prefix. Splits whether the prefix appears at the start of a
+# line or mid-string after a period.
 _INLINE_NUMBERED_SPLIT_RE = re.compile(
-    r"""(?<=\n|^)
+    r"""(?:(?<=\n)|(?<=^)|(?<=\.\s))
         (?=\s*(?:\[\d+\]|\(\d+\)|\d+[\.\)])\s+[A-Z])""",
     re.VERBOSE,
 )
@@ -200,9 +201,21 @@ def _split_sentences(text: str) -> list[str]:
     """
     text = re.sub(r"\(\s*(19\d{2}|20\d{2})\s*\)\s*\.?\s*", r". \1. ", text)
 
+    # We split a sentence boundary when ANY of the following holds:
+    #   1. period preceded by lowercase/digit/closing bracket and followed by an
+    #      uppercase word at least 1 char long, a digit, or an opening quote;
+    #   2. period preceded by ``\s[A-Z]`` (a single-letter initial) and followed
+    #      by an uppercase word AT LEAST 3 chars long (which is unlikely to be
+    #      another initial).
     parts = re.split(
-        r"(?<=[a-z\d\)\]])\.\s+(?=[\"\u201c\d]|[A-Z][\w'\-]{1,})",
+        r"""
+        (?:
+              (?<=[a-z\d\)\]])\.\s+(?=[\"\u201c\d]|[A-Z][\w'\-]+)
+            | (?<=\s[A-Z])\.\s+(?=[A-Z][\w'\-]{2,})
+        )
+        """,
         text,
+        flags=re.VERBOSE,
     )
     return [p.strip(" .,;:\"'\u201c\u201d") for p in parts if p.strip(" .,;:")]
 

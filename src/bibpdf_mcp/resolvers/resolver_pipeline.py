@@ -50,25 +50,30 @@ def _normalize_title(s: str | None) -> str:
     return _WS_RE.sub(" ", s).strip()
 
 
-def _last_name(author: str) -> str:
-    """Extract a normalized last name from various author string formats."""
-    a = unicodedata.normalize("NFKD", author).encode("ascii", "ignore").decode("ascii").strip()
-    if not a:
-        return ""
-    if "," in a:
-        last = a.split(",", 1)[0]
-    elif a.split():
-        last = a.split()[-1]
-    else:
-        last = a
-    return _PUNCT_RE.sub("", last).lower()
+def _surname_tokens(author: str) -> set[str]:
+    """Return the set of plausible surname tokens from an author string.
+
+    Citation conventions vary ('Vaswani, Ashish', 'Vaswani A', 'A. Vaswani',
+    'Ashish Vaswani'), so we collect ALL alphabetical tokens of length >= 3
+    (excluding common honorifics) — at least one will be the surname. Jaccard
+    between two such sets is robust across conventions.
+    """
+    a = unicodedata.normalize("NFKD", author).encode("ascii", "ignore").decode("ascii")
+    a = _PUNCT_RE.sub(" ", a).lower()
+    tokens = [t for t in a.split() if len(t) >= 3 and t.isalpha()]
+    blacklist = {"and", "the", "for", "von", "van", "der", "del", "los"}
+    return {t for t in tokens if t not in blacklist}
 
 
 def _author_overlap(a: list[str], b: list[str]) -> float:
     if not a or not b:
         return 0.0
-    sa = {_last_name(x) for x in a if _last_name(x)}
-    sb = {_last_name(x) for x in b if _last_name(x)}
+    sa: set[str] = set()
+    for x in a:
+        sa.update(_surname_tokens(x))
+    sb: set[str] = set()
+    for x in b:
+        sb.update(_surname_tokens(x))
     if not sa or not sb:
         return 0.0
     return len(sa & sb) / max(1, len(sa | sb))
