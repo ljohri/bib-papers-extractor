@@ -79,7 +79,12 @@ class JsonCache:
             row = session.execute(stmt).scalar_one_or_none()
             if row is None:
                 return None
-            if row.expires_at is not None and row.expires_at <= now:
+            expires = row.expires_at
+            # SQLite doesn't persist tzinfo; coerce naive datetimes to UTC so
+            # comparison with `now` works regardless of how SQLAlchemy roundtrips.
+            if expires is not None and expires.tzinfo is None:
+                expires = expires.replace(tzinfo=UTC)
+            if expires is not None and expires <= now:
                 session.delete(row)
                 session.commit()
                 return None
