@@ -1,18 +1,18 @@
-"""Typer-based CLI for local development & testing.
-
-In Phase 1 the subcommands are skeletons that print intended behavior; Phase 5 wires
-them to the real pipeline.
-"""
+"""Typer-based CLI for local development & testing."""
 
 from __future__ import annotations
 
+import asyncio
+import json
 from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
-from . import __version__
+from . import __version__, pipeline
 from .logging_config import configure_logging
+from .models import PdfCandidate, Reference, ResolvedWork
 
 app = typer.Typer(
     name="bibpdf",
@@ -48,13 +48,37 @@ def _root(
     configure_logging(log_level)
 
 
+# --- helpers ---------------------------------------------------------------
+
+
+def _dump(obj: object, output: Path | None) -> None:
+    if hasattr(obj, "model_dump"):
+        data = obj.model_dump(mode="json")
+    elif isinstance(obj, list) and obj and hasattr(obj[0], "model_dump"):
+        data = [o.model_dump(mode="json") for o in obj]
+    else:
+        data = obj
+    text = json.dumps(data, indent=2, ensure_ascii=False)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+        console.print(f"[green]Wrote[/] {output}")
+    else:
+        console.print(text)
+
+
+# --- commands --------------------------------------------------------------
+
+
 @app.command("extract-pdf")
 def extract_pdf(
     pdf_path: Path = typer.Argument(..., exists=True, dir_okay=False, readable=True),
     output: Path | None = typer.Option(None, "--output", "-o", help="Optional JSON output path."),
 ) -> None:
     """Extract references from a paper PDF."""
-    console.print(f"[yellow]Phase 1 stub:[/] would extract references from {pdf_path}")
+    refs = pipeline.extract_references_from_pdf(pdf_path)
+    console.print(f"Extracted [bold]{len(refs)}[/] references from {pdf_path}")
+    _dump(refs, output)
 
 
 @app.command("parse-bibtex")
@@ -63,7 +87,9 @@ def parse_bibtex(
     output: Path | None = typer.Option(None, "--output", "-o"),
 ) -> None:
     """Parse a BibTeX file into the internal Reference model."""
-    console.print(f"[yellow]Phase 1 stub:[/] would parse BibTeX file {bibtex_path}")
+    refs = pipeline.parse_bibtex_file(bibtex_path)
+    console.print(f"Parsed [bold]{len(refs)}[/] entries from {bibtex_path}")
+    _dump(refs, output)
 
 
 @app.command("resolve")
@@ -73,10 +99,11 @@ def resolve(
     output: Path | None = typer.Option(None, "--output", "-o"),
 ) -> None:
     """Resolve references against Crossref/OpenAlex/Semantic Scholar/arXiv."""
-    console.print(
-        f"[yellow]Phase 1 stub:[/] would resolve references from {references_json} "
-        f"with strategy={strategy}"
-    )
+    payload = json.loads(references_json.read_text(encoding="utf-8"))
+    refs = [Reference.model_validate(r) for r in payload]
+    resolved = asyncio.run(pipeline.resolve_references(refs, strategy=strategy))
+    console.print(f"Resolved [bold]{len(resolved)}[/] / {len(refs)} references")
+    _dump(resolved, output)
 
 
 @app.command("find-pdfs")
@@ -85,7 +112,12 @@ def find_pdfs(
     output: Path | None = typer.Option(None, "--output", "-o"),
 ) -> None:
     """Find legal OA PDFs for resolved works."""
-    console.print(f"[yellow]Phase 1 stub:[/] would locate OA PDFs for {resolved_json}")
+    payload = json.loads(resolved_json.read_text(encoding="utf-8"))
+    works = [ResolvedWork.model_validate(w) for w in payload]
+    cands = asyncio.run(pipeline.find_public_pdfs(works))
+    n_oa = sum(1 for c in cands if c.is_oa)
+    console.print(f"Found [bold]{n_oa}[/] OA candidates ({len(cands)} total) from {len(works)} works")
+    _dump(cands, output)
 
 
 @app.command("download")
@@ -94,10 +126,17 @@ def download(
     output_dir: Path = typer.Option(..., "--output-dir", help="Directory to write PDFs into."),
 ) -> None:
     """Download approved PDF candidates."""
-    console.print(
-        f"[yellow]Phase 1 stub:[/] would download candidates from {candidates_json} "
-        f"into {output_dir}"
-    )
+    payload = json.loads(candidates_json.read_text(encoding="utf-8"))
+    cands = [PdfCandidate.model_validate(c) for c in payload]
+    results = asyncio.run(pipeline.download_public_pdfs(cands, output_dir))
+
+    table = Table(title="Download results")
+    table.add_column("ref_id")
+    table.add_column("status")
+    table.add_column("file/error")
+    for r in results:
+        table.add_row(r.reference_id, r.status, (r.file_path or r.error or "")[:80])
+    console.print(table)
 
 
 @app.command("process-paper")
@@ -107,10 +146,10 @@ def process_paper(
     strategy: str = typer.Option("balanced", "--strategy"),
 ) -> None:
     """End-to-end pipeline: PDF -> references -> resolved -> OA PDFs -> manifest+report."""
-    console.print(
-        f"[yellow]Phase 1 stub:[/] would run full pipeline on {pdf_path} -> {output_dir} "
-        f"(strategy={strategy})"
+    summary = asyncio.run(
+        pipeline.process_paper_bibliography(pdf_path, output_dir, strategy=strategy)
     )
+    console.print_json(data=summary)
 
 
 def main() -> None:
