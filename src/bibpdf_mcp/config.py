@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     crossref_mailto: str = Field(default="", alias="CROSSREF_MAILTO")
 
     cache_db_path: Path = Field(default=Path("./cache/bibpdf.sqlite"), alias="CACHE_DB_PATH")
+    default_input_dir: Path = Field(default=Path("./data/input"), alias="DEFAULT_INPUT_DIR")
+    default_input_pdf: Path | None = Field(default=None, alias="DEFAULT_INPUT_PDF")
+    default_input_bibtex: Path | None = Field(default=None, alias="DEFAULT_INPUT_BIBTEX")
     default_output_dir: Path = Field(default=Path("./data/output"), alias="DEFAULT_OUTPUT_DIR")
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -45,9 +48,57 @@ class Settings(BaseSettings):
     )
 
     def ensure_dirs(self) -> None:
-        """Create the cache and default output directories if missing."""
+        """Create the cache and default input/output directories if missing."""
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.default_input_dir.mkdir(parents=True, exist_ok=True)
         self.default_output_dir.mkdir(parents=True, exist_ok=True)
+
+    def resolve_output_dir(self, path: str | Path | None = None) -> Path:
+        """Resolve an output directory.
+
+        Precedence: explicit ``path`` argument > ``DEFAULT_OUTPUT_DIR`` env.
+        """
+        if path is not None and str(path).strip():
+            return Path(path).expanduser().resolve()
+        return self.default_output_dir.expanduser().resolve()
+
+    def resolve_input_pdf(self, path: str | Path | None = None) -> Path:
+        """Resolve an input PDF path.
+
+        Precedence: explicit ``path`` > ``DEFAULT_INPUT_PDF`` > raise.
+        """
+        if path is not None and str(path).strip():
+            resolved = Path(path).expanduser().resolve()
+        elif self.default_input_pdf is not None:
+            resolved = self.default_input_pdf.expanduser().resolve()
+        else:
+            msg = (
+                "pdf_path is required when DEFAULT_INPUT_PDF is not set. "
+                "Pass pdf_path to the tool or set DEFAULT_INPUT_PDF in the environment."
+            )
+            raise ValueError(msg)
+        if not resolved.is_file():
+            raise FileNotFoundError(f"PDF not found: {resolved}")
+        return resolved
+
+    def resolve_input_bibtex(self, path: str | Path | None = None) -> Path:
+        """Resolve an input BibTeX path.
+
+        Precedence: explicit ``path`` > ``DEFAULT_INPUT_BIBTEX`` > raise.
+        """
+        if path is not None and str(path).strip():
+            resolved = Path(path).expanduser().resolve()
+        elif self.default_input_bibtex is not None:
+            resolved = self.default_input_bibtex.expanduser().resolve()
+        else:
+            msg = (
+                "bibtex_path is required when DEFAULT_INPUT_BIBTEX is not set. "
+                "Pass bibtex_path to the tool or set DEFAULT_INPUT_BIBTEX in the environment."
+            )
+            raise ValueError(msg)
+        if not resolved.is_file():
+            raise FileNotFoundError(f"BibTeX file not found: {resolved}")
+        return resolved
 
 
 @lru_cache(maxsize=1)

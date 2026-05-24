@@ -14,7 +14,9 @@ Cursor reads MCP server config from `~/.cursor/mcp.json` (global) or
       "cwd": "/absolute/path/to/bib-papers-extractor",
       "env": {
         "UNPAYWALL_EMAIL": "your-email@example.com",
-        "CROSSREF_MAILTO": "your-email@example.com"
+        "CROSSREF_MAILTO": "your-email@example.com",
+        "DEFAULT_INPUT_PDF": "/absolute/path/to/your/paper.pdf",
+        "DEFAULT_OUTPUT_DIR": "/absolute/path/to/bib-papers-extractor/data/output"
       }
     }
   }

@@ -81,6 +81,7 @@ def _isolated_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     We also blank out polite-pool emails/keys to keep tests hermetic.
     """
     monkeypatch.setenv("CACHE_DB_PATH", str(tmp_path / "test_cache.sqlite"))
+    monkeypatch.setenv("DEFAULT_INPUT_DIR", str(tmp_path / "in"))
     monkeypatch.setenv("DEFAULT_OUTPUT_DIR", str(tmp_path / "out"))
     monkeypatch.setenv("UNPAYWALL_EMAIL", "test@example.com")
     monkeypatch.setenv("CROSSREF_MAILTO", "test@example.com")

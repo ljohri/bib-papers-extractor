@@ -207,6 +207,8 @@ async def process_paper_bibliography(
 
     return {
         "run_id": rid,
+        "pdf_path": str(Path(pdf_path).expanduser().resolve()),
+        "output_dir": str(out_dir),
         "references_found": summary.references_found,
         "resolved": summary.references_resolved,
         "pdfs_found": summary.pdfs_found,
