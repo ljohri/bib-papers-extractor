@@ -1,4 +1,4 @@
-"""Tests for default input/output path resolution in Settings."""
+"""Tests for default output path resolution in Settings."""
 
 from __future__ import annotations
 
@@ -34,56 +34,16 @@ def test_resolve_output_dir_falls_back_to_default(tmp_path: Path, monkeypatch: p
     assert settings.resolve_output_dir("") == default.resolve()
 
 
-def test_resolve_input_pdf_explicit_path(synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEFAULT_INPUT_PDF", raising=False)
+def test_resolve_file_path(synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings = config.get_settings()
-    assert settings.resolve_input_pdf(synthetic_pdf) == synthetic_pdf.resolve()
+    assert settings.resolve_file_path(synthetic_pdf, label="PDF") == synthetic_pdf.resolve()
 
 
-def test_resolve_input_pdf_uses_default(
-    synthetic_pdf: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("DEFAULT_INPUT_PDF", str(synthetic_pdf))
-    settings = config.get_settings()
-    assert settings.resolve_input_pdf(None) == synthetic_pdf.resolve()
-
-
-def test_resolve_input_pdf_requires_path_or_default(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEFAULT_INPUT_PDF", raising=False)
-    settings = config.get_settings()
-    with pytest.raises(ValueError, match="DEFAULT_INPUT_PDF"):
-        settings.resolve_input_pdf(None)
-
-
-def test_resolve_input_pdf_missing_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_file_path_missing_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     missing = tmp_path / "nope.pdf"
-    monkeypatch.delenv("DEFAULT_INPUT_PDF", raising=False)
     settings = config.get_settings()
     with pytest.raises(FileNotFoundError, match="PDF not found"):
-        settings.resolve_input_pdf(missing)
-
-
-def test_resolve_input_bibtex_explicit_path(sample_bibtex: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEFAULT_INPUT_BIBTEX", raising=False)
-    settings = config.get_settings()
-    assert settings.resolve_input_bibtex(sample_bibtex) == sample_bibtex.resolve()
-
-
-def test_resolve_input_bibtex_uses_default(
-    sample_bibtex: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("DEFAULT_INPUT_BIBTEX", str(sample_bibtex))
-    settings = config.get_settings()
-    assert settings.resolve_input_bibtex(None) == sample_bibtex.resolve()
-
-
-def test_resolve_input_bibtex_requires_path_or_default(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEFAULT_INPUT_BIBTEX", raising=False)
-    settings = config.get_settings()
-    with pytest.raises(ValueError, match="DEFAULT_INPUT_BIBTEX"):
-        settings.resolve_input_bibtex(None)
+        settings.resolve_file_path(missing, label="PDF")
 
 
 def test_ensure_dirs_creates_input_and_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

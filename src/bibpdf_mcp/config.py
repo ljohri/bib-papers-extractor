@@ -29,8 +29,6 @@ class Settings(BaseSettings):
 
     cache_db_path: Path = Field(default=Path("./cache/bibpdf.sqlite"), alias="CACHE_DB_PATH")
     default_input_dir: Path = Field(default=Path("./data/input"), alias="DEFAULT_INPUT_DIR")
-    default_input_pdf: Path | None = Field(default=None, alias="DEFAULT_INPUT_PDF")
-    default_input_bibtex: Path | None = Field(default=None, alias="DEFAULT_INPUT_BIBTEX")
     default_output_dir: Path = Field(default=Path("./data/output"), alias="DEFAULT_OUTPUT_DIR")
 
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -62,42 +60,11 @@ class Settings(BaseSettings):
             return Path(path).expanduser().resolve()
         return self.default_output_dir.expanduser().resolve()
 
-    def resolve_input_pdf(self, path: str | Path | None = None) -> Path:
-        """Resolve an input PDF path.
-
-        Precedence: explicit ``path`` > ``DEFAULT_INPUT_PDF`` > raise.
-        """
-        if path is not None and str(path).strip():
-            resolved = Path(path).expanduser().resolve()
-        elif self.default_input_pdf is not None:
-            resolved = self.default_input_pdf.expanduser().resolve()
-        else:
-            msg = (
-                "pdf_path is required when DEFAULT_INPUT_PDF is not set. "
-                "Pass pdf_path to the tool or set DEFAULT_INPUT_PDF in the environment."
-            )
-            raise ValueError(msg)
+    def resolve_file_path(self, path: str | Path, *, label: str = "file") -> Path:
+        """Expand and resolve a required input file path."""
+        resolved = Path(path).expanduser().resolve()
         if not resolved.is_file():
-            raise FileNotFoundError(f"PDF not found: {resolved}")
-        return resolved
-
-    def resolve_input_bibtex(self, path: str | Path | None = None) -> Path:
-        """Resolve an input BibTeX path.
-
-        Precedence: explicit ``path`` > ``DEFAULT_INPUT_BIBTEX`` > raise.
-        """
-        if path is not None and str(path).strip():
-            resolved = Path(path).expanduser().resolve()
-        elif self.default_input_bibtex is not None:
-            resolved = self.default_input_bibtex.expanduser().resolve()
-        else:
-            msg = (
-                "bibtex_path is required when DEFAULT_INPUT_BIBTEX is not set. "
-                "Pass bibtex_path to the tool or set DEFAULT_INPUT_BIBTEX in the environment."
-            )
-            raise ValueError(msg)
-        if not resolved.is_file():
-            raise FileNotFoundError(f"BibTeX file not found: {resolved}")
+            raise FileNotFoundError(f"{label} not found: {resolved}")
         return resolved
 
 

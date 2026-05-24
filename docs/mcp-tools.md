@@ -6,19 +6,15 @@ The server exposes six tools over stdio. Inputs and outputs use plain JSON.
 
 ## Path defaults (MCP server)
 
-Tools that accept file or directory paths treat arguments as **optional**. When
-omitted, the server uses environment variables (or `.env` in the server `cwd`):
+Input file paths (`pdf_path`, `bibtex_path`) are **always required** on each tool
+call.
 
-| Variable | Used when |
-|----------|-----------|
-| `DEFAULT_INPUT_PDF` | `pdf_path` omitted on `extract_references_from_pdf` / `process_paper_bibliography` |
-| `DEFAULT_INPUT_BIBTEX` | `bibtex_path` omitted on `parse_bibtex_file` |
-| `DEFAULT_OUTPUT_DIR` | `output_dir` omitted on `download_public_pdfs` / `process_paper_bibliography` |
+`output_dir` is optional on `download_public_pdfs` and
+`process_paper_bibliography`. When omitted, the server uses `DEFAULT_OUTPUT_DIR`
+from the environment (or `.env` in the server `cwd`). An explicit `output_dir`
+argument always overrides that default.
 
-Explicit tool arguments **always override** these defaults. If a path is omitted
-and the matching default is unset, the tool returns a clear error.
-
-Set defaults in Claude Desktop / Cursor MCP config `env` block or in `.env`.
+Set `DEFAULT_OUTPUT_DIR` in Claude Desktop / Cursor MCP config `env` or in `.env`.
 
 ---
 
@@ -29,8 +25,6 @@ Set defaults in Claude Desktop / Cursor MCP config `env` block or in `.env`.
 ```json
 { "pdf_path": "/data/input/paper.pdf" }
 ```
-
-`pdf_path` is optional when `DEFAULT_INPUT_PDF` is configured.
 
 **Output**
 
@@ -63,8 +57,6 @@ Set defaults in Claude Desktop / Cursor MCP config `env` block or in `.env`.
 ```json
 { "bibtex_path": "/data/input/refs.bib" }
 ```
-
-`bibtex_path` is optional when `DEFAULT_INPUT_BIBTEX` is configured.
 
 **Output**: `{ "bibtex_path": "...", "references": [...], "count": N }` using the same `Reference` shape as above; `bibtex_key` populated.
 
@@ -145,8 +137,7 @@ writes deterministic filenames `YEAR_FirstAuthor_ShortTitle_DOIHash.pdf`.
 }
 ```
 
-Both `pdf_path` and `output_dir` are optional when `DEFAULT_INPUT_PDF` and
-`DEFAULT_OUTPUT_DIR` are set in the server environment.
+`output_dir` is optional when `DEFAULT_OUTPUT_DIR` is set in the server environment.
 
 **Output**
 

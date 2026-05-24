@@ -29,7 +29,6 @@ The recommended local setup runs the server through `uv` directly — no Docker 
         "CROSSREF_MAILTO": "your-email@example.com",
         "CACHE_DB_PATH": "/absolute/path/to/bib-papers-extractor/cache/bibpdf.sqlite",
         "DEFAULT_INPUT_DIR": "/absolute/path/to/bib-papers-extractor/data/input",
-        "DEFAULT_INPUT_PDF": "/absolute/path/to/your/paper.pdf",
         "DEFAULT_OUTPUT_DIR": "/absolute/path/to/bib-papers-extractor/data/output"
       }
     }

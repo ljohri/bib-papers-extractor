@@ -8,10 +8,9 @@ Six tools per the build spec, each delegating to ``bibpdf_mcp.pipeline``:
   - download_public_pdfs
   - process_paper_bibliography
 
-Input/output paths may be omitted on tools that accept files or directories;
-the server falls back to ``DEFAULT_INPUT_PDF``, ``DEFAULT_INPUT_BIBTEX``, and
-``DEFAULT_OUTPUT_DIR`` from the environment (see ``.env.example``). Explicit
-tool arguments always override those defaults.
+``output_dir`` may be omitted on tools that write files; the server falls back
+to ``DEFAULT_OUTPUT_DIR`` from the environment. Input file paths are always
+required per call.
 """
 
 from __future__ import annotations
@@ -31,18 +30,17 @@ mcp = FastMCP("bibliography-pdf")
 
 
 @mcp.tool()
-def extract_references_from_pdf(pdf_path: str | None = None) -> dict[str, Any]:
+def extract_references_from_pdf(pdf_path: str) -> dict[str, Any]:
     """Extract bibliography entries from a paper PDF.
 
     Args:
-        pdf_path: Path to the input PDF. If omitted, uses ``DEFAULT_INPUT_PDF``
-            from the server environment.
+        pdf_path: Path to the input PDF.
 
     Returns:
         ``{"pdf_path": str, "references": [Reference...], "count": int}``.
     """
     settings = get_settings()
-    path = settings.resolve_input_pdf(pdf_path)
+    path = settings.resolve_file_path(pdf_path, label="PDF")
     refs = pipeline.extract_references_from_pdf(path)
     return {
         "pdf_path": str(path),
@@ -52,15 +50,14 @@ def extract_references_from_pdf(pdf_path: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool()
-def parse_bibtex_file(bibtex_path: str | None = None) -> dict[str, Any]:
+def parse_bibtex_file(bibtex_path: str) -> dict[str, Any]:
     """Parse a BibTeX file into the internal Reference model.
 
     Args:
-        bibtex_path: Path to a ``.bib`` file. If omitted, uses
-            ``DEFAULT_INPUT_BIBTEX`` from the server environment.
+        bibtex_path: Path to a ``.bib`` file.
     """
     settings = get_settings()
-    path = settings.resolve_input_bibtex(bibtex_path)
+    path = settings.resolve_file_path(bibtex_path, label="BibTeX file")
     refs = pipeline.parse_bibtex_file(path)
     return {
         "bibtex_path": str(path),
@@ -128,19 +125,19 @@ async def download_public_pdfs(
 
 @mcp.tool()
 async def process_paper_bibliography(
-    pdf_path: str | None = None,
+    pdf_path: str,
     output_dir: str | None = None,
     strategy: str = "balanced",
 ) -> dict[str, Any]:
     """End-to-end pipeline: extract -> resolve -> find OA PDFs -> download -> manifest+report.
 
     Args:
-        pdf_path: Input paper PDF. If omitted, uses ``DEFAULT_INPUT_PDF``.
+        pdf_path: Input paper PDF (required).
         output_dir: Run output directory. If omitted, uses ``DEFAULT_OUTPUT_DIR``.
         strategy: Resolver strategy (``fast``, ``balanced``, ``deep``).
     """
     settings = get_settings()
-    pdf = settings.resolve_input_pdf(pdf_path)
+    pdf = settings.resolve_file_path(pdf_path, label="PDF")
     out = settings.resolve_output_dir(output_dir)
     return await pipeline.process_paper_bibliography(
         pdf,
