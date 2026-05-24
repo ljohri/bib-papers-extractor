@@ -1,0 +1,17 @@
+services:
+  bibpdf-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bibliography-pdf-mcp:latest
+    container_name: bibpdf-mcp
+    volumes:
+      - ./data:/data
+      - ./cache:/cache
+    env_file:
+      - .env
+    environment:
+      CACHE_DB_PATH: /cache/bibpdf.sqlite
+      DEFAULT_OUTPUT_DIR: /data/output
+    stdin_open: true
+    tty: true

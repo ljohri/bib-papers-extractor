@@ -1,0 +1,27 @@
+# Keep image small and reproducible.
+.git/
+.github/
+.venv/
+.uv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage*
+.env
+.env.*
+!.env.example
+data/
+cache/
+tests/
+*.pdf
+!tests/fixtures/**/*.pdf
+*.sqlite
+*.sqlite3
+*.db
+*.log
+.DS_Store
+node_modules/
