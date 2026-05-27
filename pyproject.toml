@@ -30,6 +30,7 @@ dependencies = [
   "sqlalchemy>=2.0.0",
   "typer>=0.12.0",
   "rich>=13.0.0",
+  "a2a-sdk[http-server]>=1.0.3",
 ]
 
 [project.optional-dependencies]
@@ -43,6 +44,7 @@ dev = [
 
 [project.scripts]
 bibpdf = "bibpdf_mcp.cli:app"
+bibpdf-a2a = "bibpdf_mcp.a2a.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

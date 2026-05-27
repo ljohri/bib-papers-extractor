@@ -45,6 +45,14 @@ class Settings(BaseSettings):
         alias="USER_AGENT",
     )
 
+    a2a_host: str = Field(default="127.0.0.1", alias="A2A_HOST")
+    a2a_port: int = Field(default=8080, alias="A2A_PORT", ge=1, le=65535)
+    a2a_public_url: str = Field(
+        default="http://127.0.0.1:8080",
+        alias="A2A_PUBLIC_URL",
+        description="Public base URL advertised in the Agent Card (JSON-RPC/REST).",
+    )
+
     def ensure_dirs(self) -> None:
         """Create the cache and default input/output directories if missing."""
         self.cache_db_path.parent.mkdir(parents=True, exist_ok=True)

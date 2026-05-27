@@ -20,6 +20,9 @@ uv run bibpdf process-paper data/input/paper.pdf --output-dir data/output/run-00
 
 # Run the MCP server (stdio)
 uv run python -m bibpdf_mcp.server
+
+# Run the A2A agent (HTTP, Agent Card + JSON-RPC/REST)
+uv run bibpdf-a2a
 ```
 
 ## What it does
@@ -48,6 +51,17 @@ Input paper / .bib / DOIs
   manifest.json + report.md
 ```
 
+## A2A agent
+
+The same pipeline is available as an **[Agent2Agent (A2A)](https://a2a-protocol.org/)** server:
+
+```bash
+uv run bibpdf-a2a   # http://127.0.0.1:8080 — see docs/a2a-setup.md
+```
+
+Clients discover skills via `/.well-known/agent.json` and invoke them with JSON messages
+(see [`docs/a2a-setup.md`](docs/a2a-setup.md)).
+
 ## MCP tools exposed
 
 | Tool | Purpose |
@@ -68,6 +82,7 @@ See [`docs/`](docs/):
 - [`installation.md`](docs/installation.md) — install & first run
 - [`claude-desktop-setup.md`](docs/claude-desktop-setup.md) — Claude Desktop config
 - [`cursor-setup.md`](docs/cursor-setup.md) — Cursor config
+- [`a2a-setup.md`](docs/a2a-setup.md) — A2A HTTP agent setup
 - [`api-resolution-strategy.md`](docs/api-resolution-strategy.md) — resolver order, confidence, retries
 - [`pdf-acquisition-policy.md`](docs/pdf-acquisition-policy.md) — what we will and will not download
 - [`data-model.md`](docs/data-model.md) — Pydantic models reference
